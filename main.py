@@ -35,7 +35,7 @@ class InsightResponse(BaseModel):
 class OllamaAnalyzer:
     def __init__(self, base_url: str = "http://ollama:11434"):
         self.base_url = base_url
-        self.model = "llama3"
+        self.model = "mistral:7b-instruct"
         
     async def is_healthy(self) -> bool:
         """Check if Ollama service is running"""
