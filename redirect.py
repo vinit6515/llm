@@ -21,10 +21,14 @@ app.add_middleware(
 EXTERNAL_API_URL = "http://34.95.157.211:8000/ask-csv"
 
 # Function to interact with the remote server (the external API)
-async def call_external_server(content: str) -> dict:
+async def call_external_server(content: str, filename: str) -> dict:
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.post(EXTERNAL_API_URL, data={"csv_content": content})
+            # Prepare the file data as multipart/form-data
+            files = {"file": (filename, content, "text/csv")}
+            
+            # Send the request as multipart/form-data
+            response = await client.post(EXTERNAL_API_URL, files=files)
             
             if response.status_code != 200:
                 logger.error(f"Error from external API: {response.text}")
@@ -39,14 +43,17 @@ async def call_external_server(content: str) -> dict:
         logger.error(f"Request to external server failed: {e}")
         raise HTTPException(status_code=503, detail="External API unavailable")
 
+
 # Endpoint to handle CSV requests and call external server
 @app.post("/ask-csv")
 async def ask_csv(file: UploadFile = File(...)) -> dict:
     # Read the file content
     content = (await file.read()).decode("utf-8")
+    filename = file.filename  # Get the filename to send it to the external API
     
     # Call the external server to process the content
-    result = await call_external_server(content)
+    result = await call_external_server(content, filename)
     
     # Return the result received from the external server
     return result
+
