@@ -18,7 +18,7 @@ app.add_middleware(
     allow_headers=["*"],  # Allow all headers
 )
 # External API URL
-EXTERNAL_API_URL = "http://34.95.157.211:8000/ask-csv"
+EXTERNAL_API_URL = "http://34.151.241.78:8000/ask-csv"
 
 # Function to interact with the remote server (the external API)
 async def call_external_server(content: str, filename: str) -> dict:
