@@ -1,18 +1,44 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import RedirectResponse
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, HTTPException, Depends, File, UploadFile
+from fastapi.responses import JSONResponse
+import httpx
+import logging
+
+# Logging setup
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-# Enable CORS (Allow all origins)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins
-    allow_credentials=True,
-    allow_methods=["*"],  # Allow all HTTP methods
-    allow_headers=["*"],  # Allow all headers
-)
+# External API URL
+EXTERNAL_API_URL = "http://34.95.157.211:8000/ask-csv"
 
+# Function to interact with the remote server (the external API)
+async def call_external_server(content: str) -> dict:
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(EXTERNAL_API_URL, data={"csv_content": content})
+            
+            if response.status_code != 200:
+                logger.error(f"Error from external API: {response.text}")
+                raise HTTPException(status_code=500, detail="Failed to call external API")
+            
+            return response.json()  # Assuming the server returns a JSON response
+
+    except httpx.TimeoutException:
+        logger.error("External server timeout")
+        raise HTTPException(status_code=504, detail="External API timeout")
+    except httpx.RequestError as e:
+        logger.error(f"Request to external server failed: {e}")
+        raise HTTPException(status_code=503, detail="External API unavailable")
+
+# Endpoint to handle CSV requests and call external server
 @app.post("/ask-csv")
-async def redirect_to_backend(request: Request):
-    return RedirectResponse(url="http://34.95.157.211:8000/ask-csv", status_code=307)
+async def ask_csv(file: UploadFile = File(...)) -> dict:
+    # Read the file content
+    content = (await file.read()).decode("utf-8")
+    
+    # Call the external server to process the content
+    result = await call_external_server(content)
+    
+    # Return the result received from the external server
+    return result
