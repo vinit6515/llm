@@ -23,19 +23,13 @@ EXTERNAL_API_URL = "http://34.95.157.211:8000/ask-csv"
 # Function to interact with the remote server (the external API)
 async def call_external_server(content: str, filename: str) -> dict:
     try:
-        async with httpx.AsyncClient() as client:
-            # Prepare the file data as multipart/form-data
+        async with httpx.AsyncClient(timeout=600.0) as client:  # Increase timeout to 5 minutes (300 seconds)
             files = {"file": (filename, content, "text/csv")}
-            
-            # Send the request as multipart/form-data
             response = await client.post(EXTERNAL_API_URL, files=files)
-            
             if response.status_code != 200:
                 logger.error(f"Error from external API: {response.text}")
                 raise HTTPException(status_code=500, detail="Failed to call external API")
-            
             return response.json()  # Assuming the server returns a JSON response
-
     except httpx.TimeoutException:
         logger.error("External server timeout")
         raise HTTPException(status_code=504, detail="External API timeout")
