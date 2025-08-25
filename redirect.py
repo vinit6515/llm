@@ -1,17 +1,8 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Request
+from fastapi.responses import RedirectResponse
 
 app = FastAPI()
 
-# Allow your frontend origin(s)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # or ["https://yourdomain.com"]
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 @app.post("/ask-csv")
-async def ask_csv(data: dict):
-    return {"message": "Received!", "data": data}
+async def redirect_to_backend(request: Request):
+    return RedirectResponse(url="http://34.95.157.211:8000/ask-csv", status_code=307)
